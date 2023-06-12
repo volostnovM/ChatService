@@ -126,9 +126,12 @@ fun main() {
     ChatService.addMessage(message10)
     ChatService.addMessage(message11)
 
+
     ChatService.editingMessage(updatedMessage)
     ChatService.getUnreadChats(1)
-    ChatService.deleteMessage(8)
+    ChatService.deleteMessage(2)
+    ChatService.deleteMessage(10)
     ChatService.deleteChatById(listOf(3, 1))
     ChatService.getMessagesFromChat(chatId = listOf(1, 2), 5, 2)
+    println(ChatService.getLastMessages(vasya))
 }

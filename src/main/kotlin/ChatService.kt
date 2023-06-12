@@ -20,15 +20,15 @@ object ChatService {
     }
 
     fun addMessage(message: Message): Int {
-        val key: List<Int> = listOf(message.senderId, message.recipientId)
+        val key: List<Int> = sortedSetOf(message.senderId, message.recipientId).toList()
         val newMessage = message.copy(id = lastId++)
 
-        if (!chats.containsKey(key) && !chats.containsKey(key.reversed())) {
+        if (!chats.containsKey(key)) {
             chats[key] = mutableListOf(newMessage)
         } else {
             chats.forEach { (k, v) ->
                 if (k.contains(message.senderId) && k.contains(message.recipientId)) {
-                    chats[k] = v.plusElement(newMessage) as MutableList<Message>
+                    chats[k] = v.plusElement(newMessage).toMutableList()
                 }
             }
         }
@@ -41,7 +41,7 @@ object ChatService {
             val interiorIterator = entry.value.iterator()
             interiorIterator.forEach { message: Message ->
                 if (message.id == messageId) {
-                    val n = entry.value.filterNot { it.id == messageId } as MutableList
+                    val n = entry.value.filterNot { it.id == messageId }.toMutableList()
                     chats[entry.key] = n
                     if (entry.value.isEmpty()) {
                         externalIterator.remove()
@@ -97,7 +97,7 @@ object ChatService {
     fun getMessagesFromChat(chatId: List<Int>, lastMessageId: Int, numberOfMessages: Int): List<Message> {
         var chatMessageList = listOf<Message>()
         chats.forEach { (key: List<Int>, value: List<Message>) ->
-            if (key == chatId) {
+            if (key == chatId || key == chatId.reversed()) {
                 chatMessageList =
                     value.filter { it.id >= lastMessageId }.subList(0, numberOfMessages)
 
@@ -107,6 +107,41 @@ object ChatService {
             }
         }
         return chatMessageList
+    }
+
+    fun getLastMessages(userId: User): List<String> {
+        var chatMessageList = mutableListOf<String>()
+
+        usersData.forEach{
+            val chatMap = chats[listOf<Int>(userId.id, it.id)]
+            if(userId.id == it.id) {
+                println("С самим собой чата не может быть")
+            } else {
+                val msg = chatMap?.last()?.text ?: "Нет сообщений"
+                chatMessageList.add("Чат с пользователем $it - $msg")
+            }
+        }
+
+        return chatMessageList
+    }
+
+    fun getUnreadChatsCount(userId: Int): Int {
+        val unreadChatList = mutableListOf<List<Message>>()
+        chats.forEach { (key, value) ->
+            if (key.contains(userId)) {
+                val newList = value.filter { it.recipientId == userId && !it.readStatus }
+                unreadChatList.plusAssign(newList)
+            }
+        }
+
+        val iterator = unreadChatList.iterator()
+        iterator.forEach {
+            if (it.isEmpty()) {
+                iterator.remove()
+            }
+        }
+
+        return unreadChatList.size
     }
 
     fun getUnreadChats(userId: Int): MutableList<List<Message>> {
